@@ -1,8 +1,8 @@
 #! /bin/sh
-# /etc/init.d/noip 
+# /etc/init.d/nixieNTP 
 
 ### BEGIN INIT INFO
-# Provides:          noip
+# Provides:          nixieNTP
 # Required-Start:    $remote_fs $local_fs
 # Required-Stop:     $remote_fs $local_fs
 # Default-Start:     2 3 4 5
