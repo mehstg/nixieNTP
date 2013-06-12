@@ -1,4 +1,13 @@
 #! /usr/bin/python
+
+"""nixieNTP.py: This script is designed to generate a NMEA GPRMC sentence with the correct system time/date and output via serial."""
+"""This script has been tested with the Nixie QTC kit available from PV Electronics - http://http://www.pvelectronics.co.uk/"""
+
+""" For NMEA sentence specifications, please visit - http://aprs.gids.nl/nmea/ """
+
+__author__      = "Paul Braham"
+__copyright__   = "Copyright 2012, Released under the GPLv3 License - more information at http://www.gnu.org/licenses/"
+
 from operator import xor
 import time
 import datetime
@@ -7,30 +16,39 @@ import argparse
 
 def main ():
 
+	
+	# Start of editable variables
+
+        where = "5128.334,N,00003.100,W"   # Fake co-ordinates - The nixie clock does not care about this
+	serialPort = '/dev/ttyAMA0'  # Default serial port - the standard GPIO UART location on a Raspberry Pi is /dev/ttyAMA0
+	baudRate = 4800 # Baud rate of serial connection
+	serialParity = serial.PARITY_NONE # Serial Parity - Check PySerial for more info - http://pyserial.sourceforge.net/
+	serialStopBits = serial.STOPBITS_ONE # Serial Stop Bits - Check PySerial for more info - http://pyserial.sourceforge.net/
+	serialByteSize = serial.EIGHTBITS # Serial Byte Size - Check PySerial for more info - http://pyserial.sourceforge.net/
+
+
+	# Argument parser - Allows nixieNTP to accept command line arguments in the form of:
+	# -v or --verbose - This prints the GPRMC sentence to STDOUT in addition to the serial output
+	# -p or --port - This allows the user to specify the port used by nixieNTP - e.g. ./nixieNTP.py -p /dev/tty0
 	parser = argparse.ArgumentParser()
 	parser.add_argument('-v','--verbose', help='Prints GPRMC Sentence to STDOUT in addition to serial', action='store_true')
 	parser.add_argument('-p','--port', help='Define serial port used, E.g. /dev/tty1', required=False)
 	args = parser.parse_args()
 	
-	print "Debug info, to be removed"
-	print args
-	
-	#Fake Longitude/Latitude coordinates
-	where = "5138.334,N,00003.740,W"
 
+	# If command line argument --port is invoked, replace variable with contents
 	if args.port:
 		serialPort = args.port
-	else:
-		serialPort = '/dev/ttyAMA0'
+	
 
 	# configure the serial connections (This will differ depending on 
 	#the Nixie Clock you are connecting to)
 	ser = serial.Serial(
     	port=serialPort,
-    	baudrate=4800,
-    	parity=serial.PARITY_NONE,
-    	stopbits=serial.STOPBITS_ONE,
-   	bytesize=serial.EIGHTBITS
+    	baudrate=baudRate,
+    	parity=serialParity,
+    	stopbits=serialStopBits,
+   	bytesize=serialByteSize
 	)
 
 	# Open Serial Port
