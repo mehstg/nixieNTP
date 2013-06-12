@@ -13,7 +13,7 @@ def main ():
 	# configure the serial connections (This will differ depending on 
 	#the Nixie Clock you are connecting to)
 	ser = serial.Serial(
-    	port='/dev/tty1',
+    	port='/dev/ttyAMA0',
     	baudrate=4800,
     	parity=serial.PARITY_NONE,
     	stopbits=serial.STOPBITS_ONE,
