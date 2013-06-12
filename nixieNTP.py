@@ -6,14 +6,27 @@ import serial
 import argparse
 
 def main ():
+
+	parser = argparse.ArgumentParser()
+	parser.add_argument('-v','--verbose', help='Prints GPRMC Sentence to STDOUT in addition to serial', action='store_true')
+	parser.add_argument('-p','--port', help='Define serial port used, E.g. /dev/tty1', required=False)
+	args = parser.parse_args()
+	
+	print "Debug info, to be removed"
+	print args
 	
 	#Fake Longitude/Latitude coordinates
 	where = "5138.334,N,00003.740,W"
 
+	if args.port:
+		serialPort = args.port
+	else:
+		serialPort = '/dev/ttyAMA0'
+
 	# configure the serial connections (This will differ depending on 
 	#the Nixie Clock you are connecting to)
 	ser = serial.Serial(
-    	port='/dev/ttyAMA0',
+    	port=serialPort,
     	baudrate=4800,
     	parity=serial.PARITY_NONE,
     	stopbits=serial.STOPBITS_ONE,
@@ -39,8 +52,9 @@ def main ():
 		#Write String to Serial
 		ser.write(output)
 
-		#Print String to STDOUT - For debugging
-		print output
+		if args.verbose:
+			#Print String to STDOUT - For debugging
+			print output
 
 		#Sleep for 1 second
 		time.sleep(1)
