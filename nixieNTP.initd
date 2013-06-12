@@ -1,0 +1,40 @@
+#! /bin/sh
+# /etc/init.d/nixieNTP
+
+### BEGIN INIT INFO
+# Provides:          nixieNTP
+# Required-Start:    $remote_fs $local_fs
+# Required-Stop:     $remote_fs $local_fs
+# Default-Start:     2 3 4 5
+# Default-Stop:      0 1 6
+# Short-Description: Script to start the nixieNTP script
+# Description:       A script to start the nixieNTP
+### END INIT INFO
+
+# If you want a command to always run, put it here
+
+# Carry out specific functions when asked to by the system
+DAEMON=/usr/local/share/nixieNTP/nixieNTP.py
+ARGS=""
+PIDFILE=/var/run/nixieNTP.pid
+
+case "$1" in
+  start)
+    echo "Starting nixieNTP"
+    /sbin/start-stop-daemon --start --pidfile $PIDFILE \
+        --user root --group root \
+        -b --make-pidfile \
+        --exec $DAEMON $ARGS
+    ;;
+  stop)
+    echo "Stopping nixieNTP"
+    /sbin/start-stop-daemon --stop --pidfile $PIDFILE --verbose
+    ;;
+  *)
+    echo "Usage: /etc/init.d/nixieNTP {start|stop}"
+    exit 1
+    ;;
+esac
+
+exit 0
+
