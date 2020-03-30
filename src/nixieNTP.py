@@ -8,16 +8,31 @@
 __author__      = "Paul Braham"
 __copyright__   = "Copyright 2012, Released under the GPLv3 License - more information at http://www.gnu.org/licenses/"
 
+"""Updated 2020 to include a MQTT client to switch output on/off. Used with HomeAssistant"""
+
 from functools import reduce
 from operator import xor
 import time
 import datetime
 import serial
 import argparse
+import paho.mqtt.client as mqtt
+
+class mqttBool:
+    def __init__(self):
+        self.toggle = True
+
+    def disable(self):
+        self.toggle = False
+
+    def enable(self):
+        self.toggle = True
+
+    def state(self):
+        return self.toggle
+toggle = mqttBool()
 
 def main ():
-
-    
     # Start of editable variables
 
     where = "5128.334,N,00003.100,W" # Fake co-ordinates - The nixie clock does not care about this
@@ -29,11 +44,12 @@ def main ():
 
 
     # Argument parser - Allows nixieNTP to accept command line arguments in the form of:
-    # -v or --verbose - This prints the GPRMC sentence to STDOUT in addition to the serial output
-    # -p or --port - This allows the user to specify the port used by nixieNTP - e.g. ./nixieNTP.py -p /dev/tty0
     parser = argparse.ArgumentParser()
     parser.add_argument('-v','--verbose', help='Prints GPRMC Sentence to STDOUT in addition to serial', action='store_true')
-    parser.add_argument('-p','--port', help='Define serial port used, E.g. /dev/tty1', required=False)
+    parser.add_argument('-P','--port', help='Define serial port used, E.g. /dev/tty1', required=False)
+    parser.add_argument('-m','--mqttbroker', help='Define MQTT broker address', required=True)
+    parser.add_argument('-u','--mqttuser', help='Define MQTT auth username', required=True)
+    parser.add_argument('-p','--mqttpass', help='Define MQTT auth password', required=True)
     args = parser.parse_args()
     
 
@@ -41,6 +57,8 @@ def main ():
     if args.port:
         serialPort = args.port
     
+    #Initiate connection to MQTT broker
+    initiateMQTT(args.mqttbroker,1883,args.mqttuser,args.mqttpass)
 
     # configure the serial connections (This will differ depending on 
     #the Nixie Clock you are connecting to)
@@ -68,13 +86,14 @@ def main ():
         # Append XOR checksum to the end of the GPRMC Sentence
         output = sentence+calculateChecksum(sentence)
         
-        #Write String to Serial
-        ser.write(output.encode())
-
+        if toggle.state():
+            #Write String to Serial
+            ser.write(output.encode())
+            if args.verbose:
+                #Print String to STDOUT - For debugging
+                print(output)
         if args.verbose:
-            #Print String to STDOUT - For debugging
-            print(output)
-
+            print("MQTT Toggle: " + toggle.state())
         #Sleep for 1 second
         time.sleep(1)
 
@@ -99,6 +118,40 @@ def calculateChecksum (gprmcString):
 
     # Convert to Hex - Then String - Strip the '0x' from the start of the String - Messy, to be fixed
     return str(hex(checksum))[2:4]
+
+
+# The callback for when the client receives a CONNACK response from the server.
+def on_connect(client, userdata, flags, rc):
+    print("Connected with result code "+str(rc))
+
+    # Subscribing in on_connect() means that if we lose the connection and
+    # reconnect then subscriptions will be renewed.
+    client.subscribe("nixieclock/serial")
+
+# The callback for when a PUBLISH message is received from the server.
+def on_message(client, userdata, msg):
+    print(msg.payload)
+    if (msg.payload == b'ON'):
+        print("Turn Nixie Clock On")
+        toggle.enable()
+    elif (msg.payload == b'OFF'):
+        print("Turn Nixie Clock Off")
+        toggle.disable()
+    else:
+        print("No Match")
+
+
+def initiateMQTT(broker,port,username,password):
+
+    client = mqtt.Client()
+    client.username_pw_set(username=username,password=password)
+    client.on_connect = on_connect
+    client.on_message = on_message
+
+    client.connect(broker, port, 60)
+
+    #Start non blocking loop
+    client.loop_start()
 
 
 #Invoke main function
